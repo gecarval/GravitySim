@@ -31,12 +31,12 @@
 # define WINX	1200
 # define WINY	800
 
-# define COLLISION_STEPS	1
+# define COLLISION_STEPS	12
 # define WHITE	0xDDDDFF
 
 // QUAD TREE
-#define DEFAULT_CAPACITY 512
-#define MAX_DEPTH 4096
+#define DEFAULT_CAPACITY 1024
+#define MAX_DEPTH 1024
 
 // STRUCTS
 typedef struct s_objinf
@@ -60,6 +60,26 @@ typedef struct s_vector
 	float_t	y;
 }	t_vector;
 
+typedef struct s_circle
+{
+    float_t	x;
+    float_t	y;
+    float_t	r;
+    float_t	rsqrt;
+} t_circle;
+
+typedef struct s_rectangle
+{
+	float_t	x;
+	float_t	y;
+	float_t	w;
+	float_t	h;
+	float_t	left;
+	float_t	right;
+	float_t	top;
+	float_t	bottom;
+}	t_rectangle;
+
 typedef struct s_particle
 {
 	t_vector			prev_pos;
@@ -72,6 +92,27 @@ typedef struct s_particle
 	int					r;
 	struct s_particle	*next;
 }	t_particle;
+
+typedef struct s_point
+{
+	float_t		x;
+	float_t		y;
+	t_particle	*part;
+} t_point;
+
+typedef struct s_quadtree
+{
+	t_rectangle			boundary;
+	t_point				*points;
+	int					point_count;
+	int					capacity;
+	int					depth;
+	bool				divided;
+	struct s_quadtree	*northeast;
+	struct s_quadtree	*northwest;
+	struct s_quadtree	*southeast;
+	struct s_quadtree	*southwest;
+}	t_quadtree;
 
 typedef struct s_gravsim
 {
@@ -124,6 +165,7 @@ typedef struct s_data
 	t_img		*img;
 	t_menu		*menu;
 	t_gravsim	*gsim;
+	t_quadtree	*qt;
 	int			num_of_particles;
 	int			part_num;
 	int			radius;
@@ -136,47 +178,6 @@ typedef struct s_data
 	int			mposy;
 	int			timing;
 }	t_data;
-
-typedef struct s_circle
-{
-    float_t	x;
-    float_t	y;
-    float_t	r;
-    float_t	rsqrt;
-} t_circle;
-
-typedef struct s_rectangle
-{
-	float_t	x;
-	float_t	y;
-	float_t	w;
-	float_t	h;
-	float_t	left;
-	float_t	right;
-	float_t	top;
-	float_t	bottom;
-}	t_rectangle;
-
-typedef struct s_point
-{
-	float_t		x;
-	float_t		y;
-	t_particle	*part;
-} t_point;
-
-typedef struct s_quadtree
-{
-	t_rectangle			boundary;
-	t_point				*points;
-	int					point_count;
-	int					capacity;
-	int					depth;
-	bool				divided;
-	struct s_quadtree	*northeast;
-	struct s_quadtree	*northwest;
-	struct s_quadtree	*southeast;
-	struct s_quadtree	*southwest;
-}	t_quadtree;
 
 // PROCESS CALLS
 void	display_error(t_data *data, char *msg);
@@ -248,7 +249,9 @@ t_quadtree	*get_one_children(t_quadtree *qt, const char *quadrant);
 void		subdivide_tree(t_quadtree *qt);
 bool		insert_point(t_quadtree *qt, t_point p);
 void		query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[], int *found_count);
+void		query_quadtree_circle(t_quadtree *qt, t_circle *range, t_point *found[], int *found_count);
 int		report_query(t_quadtree *qt, t_data *data, t_rectangle range);
+int		report_query_circle(t_quadtree *qt, t_data *data, t_circle range);
 void		display_quadtree_boundaries(t_quadtree *qt, t_data *data);
 void		draw_rectangle(t_rectangle r, t_data *data);
 void		print_quadtree(t_quadtree *qt);

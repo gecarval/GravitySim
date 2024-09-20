@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 19:34:34 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 20:02:58 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/20 20:24:49 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,12 +103,12 @@ float_t	distfromrec(t_rectangle *rect, t_point *point)
 // CIRCLE HELPER FUNCTIONS
 t_circle	create_circle(float_t x, float_t y, float_t r)
 {
-	return ((t_circle){x, y, r, r + r});
+	return ((t_circle){x, y, r, r * r});
 }
 
 int	circontains(t_circle *c, t_point *p)
 {
-	return ((p->x - c->x) * (p->x - c->x) + (p->y - c->y) * (p->y - c->y) <= c->rsqrt);
+	return (((p->x - c->x) * (p->x - c->x)) + ((p->y - c->y) * (p->y - c->y)) <= c->rsqrt);
 }
 
 int	cirintersects(t_circle *c, t_rectangle *range)
@@ -139,11 +139,21 @@ t_quadtree	*create_quadtree(t_rectangle boundary, unsigned int capacity, unsigne
 	qt = (t_quadtree *)malloc(sizeof(t_quadtree));
 	if (!qt)
 		return (NULL);
-	qt->points = (t_point *)malloc(capacity * sizeof(t_point));
+	qt->points = (t_point *)malloc((capacity + 1) * sizeof(t_point));
 	if (!qt->points)
 		free(qt);
 	if (!qt->points)
 		return (NULL);
+	unsigned int	i;
+	t_point	*tmp;
+	i = 0;
+	tmp = qt->points;
+	while (i < capacity)
+	{
+		tmp++;
+		i++;
+	}
+	tmp = NULL;
 	qt->boundary = boundary;
 	qt->capacity = capacity;
 	qt->depth = depth;
@@ -273,8 +283,6 @@ void	query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[], int *f
 {
 	int	i;
 
-	if (!quadintersects(&qt->boundary, range))
-		return ;
 	if (qt->divided)
 	{
 		query_quadtree(qt->northwest, range, found, found_count);
@@ -283,15 +291,62 @@ void	query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[], int *f
 		query_quadtree(qt->southeast, range, found, found_count);
 		return ;
 	}
+	if (!quadintersects(&qt->boundary, range))
+		return ;
 	i = -1;
 	while (++i < qt->point_count)
 		if (quadcontains(range, &qt->points[i]))
 			found[(*found_count)++] = &qt->points[i];
 }
 
+void	query_quadtree_circle(t_quadtree *qt, t_circle *range, t_point *found[], int *found_count)
+{
+	int	i;
+	
+	if (!qt)
+		return ;
+	if (qt->divided)
+	{
+		query_quadtree_circle(qt->northwest, range, found, found_count);
+		query_quadtree_circle(qt->northeast, range, found, found_count);
+		query_quadtree_circle(qt->southwest, range, found, found_count);
+		query_quadtree_circle(qt->southeast, range, found, found_count);
+		return ;
+	}
+	if (!qt->points)
+		return ;
+	if (!cirintersects(range, &qt->boundary))
+		return ;
+	i = 0;
+	while (i < qt->point_count)
+	{
+		if (circontains(range, &qt->points[i]))
+		{
+			found[*found_count] = &qt->points[i];
+			(*found_count)++;
+		}
+		i++;
+	}
+}
+
+int	report_query_circle(t_quadtree *qt, t_data *data, t_circle range)
+{
+	t_point		*found[100000];
+	int		found_count;
+	int		i;
+
+	i = -1;
+	found_count = 0;
+	circlebres(range.x, range.y, range.r, data, 0xDD00DD);
+	query_quadtree_circle(qt, &range, found, &found_count);
+	while (++i < found_count)
+		highlight_point(*found[i], found[i]->part->r, data);
+	return (found_count);
+}
+
 int	report_query(t_quadtree *qt, t_data *data, t_rectangle range)
 {
-	t_point		*found[1000];
+	t_point		*found[100000];
 	int		found_count;
 	int		i;
 

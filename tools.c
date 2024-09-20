@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 17:38:51 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 17:34:57 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/20 21:12:20 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,12 +41,11 @@ void	put_particle(int x, int y, t_data *data)
 	if (!tmp)
 		display_error(data, "part malloc error\n");
 	tmp->pos = create_vector(x, y);
-	tmp->prev_pos = create_vector(0, 0);
+	tmp->prev_pos = tmp->pos;
 	tmp->vel = create_vector(0, 0);
 	tmp->acel = create_vector(0, 0);
-	tmp->mass = 5;
+	tmp->mass = 1;
 	tmp->r = data->radius;
-	tmp->id = data->num_of_particles % data->part_num;
 	tmp->color = WHITE;
 	tmp->next = data->gsim->part;
 	data->gsim->part = tmp;

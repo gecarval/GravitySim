@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 20:41:37 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/20 21:14:13 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,13 +22,13 @@ int	create_rgb_color(int r, int g, int b)
 	return ((r << 16) | (g << 8) | b);
 }
 
-int	set_redshift(t_particle *tmp)
+int	set_redshift(t_particle *tmp, t_data *data)
 {
 	int		redintensity;
 	float_t		speedmag;
 
 	speedmag = vector_magsq(tmp->vel);
-	redintensity = (int)mapfloat_t(speedmag, 0.0f, 1000.0f, 255.0f, 0.0f);
+	redintensity = (int)mapfloat_t(speedmag, 0.0f, data->num_of_particles / 500, 255.0f, 0.0f);
 	if (redintensity > 255)
 		redintensity = 255;
 	if (redintensity < 0)
@@ -47,7 +47,7 @@ void	render_particle(t_data *data)
 	render_background(data, 0x000000);
 	while (++i < data->num_of_particles)
 	{
-		tmp->color = set_redshift(tmp);
+		tmp->color = set_redshift(tmp, data);
 		if (tmp->r == 1)
 		{
 			pixel_to_img((int)tmp->pos.x, (int)tmp->pos.y, data, tmp->color);
@@ -78,7 +78,7 @@ void	attraction(t_particle *mover, t_particle *other)
 	float_t		dist;
 	float_t		g;
 
-	g = 1;
+	g = 0.001;
 	force = (t_vector){0, 0};
 	force = vectorsub(mover->pos, other->pos);
 	dist = constrain_float_t(vector_magsq(force), 100, 1000);
@@ -188,7 +188,7 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree* qtree, t_data *data)
 	qdist = create_vector(qtree->boundary.x, qtree->boundary.y);
 	qdist = vectorsub(m->pos, qdist);
 	d = vector_magsqsqrt(qdist);
-	if (d < 25)
+	if (d < 1)
 	{
 		i = -1;
 		while (++i < qtree->point_count)
@@ -211,9 +211,9 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 {
 	int		i;
 	int		j;
+	t_vector	dist;
 	t_particle	*tmp;
 	t_particle	*tmp2;
-	t_vector	dist;
 
 	if (qt->divided)
 	{
@@ -237,47 +237,80 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 	}
 }
 
+void	*partition_process(void *ptr)
+{
+	t_data		*data;
+	t_particle	*tmp;
+	int		i;
+
+	i = 0;
+	data = (t_data *)ptr;
+	tmp = data->gsim->part;
+	while (i < data->num_of_particles / 2)
+	{
+		tmp = tmp->next;
+		i++;
+	}
+	while (i < data->num_of_particles)
+	{
+		apply_attraction_onquad(tmp, data->qt, data);
+		tmp = tmp->next;
+		i++;
+	}
+	return (NULL);
+}
+
 void	process_physics_quad(t_data *data)
 {
-	int			i;
-	int			j;
+	int		i;
+	int		k;
 	t_point		pt;
 	t_particle	*tmp;
-	t_quadtree	*qt;
+	pthread_t	processor;
 
 	i = -1;
 	tmp = data->gsim->part;
-	qt = create_quadtree_fromglobals(data->winx, data->winy);
+	data->qt = create_quadtree_fromglobals(data->winx, data->winy);
 	while (++i < data->num_of_particles)
 	{
 		pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
-		insert_point(qt, pt);
+		insert_point(data->qt, pt);
 		tmp = tmp->next;
+	}
+	if (pthread_create(&processor, NULL, partition_process, data) != 0)
+	{
+		free_quadtree(data->qt);
+		display_error(data, "error on thread create\n");
 	}
 	i = -1;
 	tmp = data->gsim->part;
-	while (++i < data->num_of_particles)
+	while (++i < data->num_of_particles / 2)
 	{
-		apply_attraction_onquad(tmp, qt, data);
+		apply_attraction_onquad(tmp, data->qt, data);
 		tmp = tmp->next;
 	}
-	free_quadtree(qt);
-	j = -1;
-	while (++j < COLLISION_STEPS)
+	if (pthread_join(processor, NULL) != 0)
+	{
+		free_quadtree(data->qt);
+		display_error(data, "error on thread join\n");
+	}
+	if (data->show_tree == 1)
+		display_quadtree_boundaries(data->qt, data);
+	free_quadtree(data->qt);
+	k = -1;
+	while (++k < COLLISION_STEPS)
 	{
 		i = -1;
 		tmp = data->gsim->part;
-		qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2, data->winx, data->winy, 3);
+		data->qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2, data->winx, data->winy, 5);
 		while (++i < data->num_of_particles)
 		{
 			pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
-			insert_point(qt, pt);
+			insert_point(data->qt, pt);
 			tmp = tmp->next;
 		}
-		apply_collision_onquad(qt, data);
-		if (data->show_tree == 1)
-			display_quadtree_boundaries(qt, data);
-		free_quadtree(qt);
+		apply_collision_onquad(data->qt, data);
+		free_quadtree(data->qt);
 	}
 }
 
