@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/20 21:14:13 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/23 13:59:53 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -82,15 +82,8 @@ void	attraction(t_particle *mover, t_particle *other)
 	force = (t_vector){0, 0};
 	force = vectorsub(mover->pos, other->pos);
 	dist = constrain_float_t(vector_magsq(force), 100, 1000);
-	strength = (g * mover->mass * other->mass) / dist;
-	force = vector_setmagmult(force, strength);
-	applyforce(other, force);
-	// to other
-	force = (t_vector){0, 0};
-	force = vectorsub(other->pos, mover->pos);
-	dist = constrain_float_t(vector_magsq(force), 100, 1000);
-	strength = (g * other->mass * mover->mass) / dist;
-	force = vector_setmagmult(force, strength);
+	strength = (g * other->mass) / dist;
+	force = vector_setmagmult(force, -strength);
 	applyforce(mover, force);
 }
 
@@ -302,7 +295,7 @@ void	process_physics_quad(t_data *data)
 	{
 		i = -1;
 		tmp = data->gsim->part;
-		data->qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2, data->winx, data->winy, 5);
+		data->qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2, data->winx, data->winy, 3);
 		while (++i < data->num_of_particles)
 		{
 			pt = create_point(tmp->pos.x, tmp->pos.y, tmp);

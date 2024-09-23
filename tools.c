@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 17:38:51 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/20 21:12:20 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/23 14:11:24 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,8 @@ void	put_particle(int x, int y, t_data *data)
 		display_error(data, "part malloc error\n");
 	tmp->pos = create_vector(x, y);
 	tmp->prev_pos = tmp->pos;
-	tmp->vel = create_vector(0, 0);
+	tmp->vel = create_vector(data->mposx - data->pmposx, data->mposy - data->pmposy);
+	limit_velocity(tmp, 1);
 	tmp->acel = create_vector(0, 0);
 	tmp->mass = 1;
 	tmp->r = data->radius;
@@ -69,7 +70,11 @@ int	mlx_anim(t_data *data)
 				data->click_hold = 0;
 			if (data->mposy < 0 || data->mposy > data->winy)
 				data->click_hold = 0;
-			put_particle(data->mposx, data->mposy, data);
+			i = -1;
+			while (++i < 3)
+				put_particle(data->mposx + rand() % 5, data->mposy + rand() % 5, data);
+			data->pmposx = data->mposx;
+			data->pmposy = data->mposy;
 		}
 	}
 	return (0);

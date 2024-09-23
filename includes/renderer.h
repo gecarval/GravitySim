@@ -31,11 +31,11 @@
 # define WINX	1200
 # define WINY	800
 
-# define COLLISION_STEPS	12
+# define COLLISION_STEPS	6
 # define WHITE	0xDDDDFF
 
 // QUAD TREE
-#define DEFAULT_CAPACITY 1024
+#define DEFAULT_CAPACITY 512
 #define MAX_DEPTH 1024
 
 // STRUCTS
@@ -174,6 +174,8 @@ typedef struct s_data
 	int			anigsim;
 	int			click_hold;
 	int			show_tree;
+	int			pmposx;
+	int			pmposy;
 	int			mposx;
 	int			mposy;
 	int			timing;
@@ -210,6 +212,7 @@ void	part_sim(t_data *data);
 void	reset_pos(t_data *data);
 void	ft_set_params(t_data *data, int part_n, int radius);
 // VECTORS
+void		limit_velocity(t_particle *mover, float_t limit);
 t_vector	create_vector(float_t x, float_t y);
 t_vector	vectoradd(t_vector v1, t_vector v2);
 t_vector	vectorsub(t_vector v1, t_vector v2);
