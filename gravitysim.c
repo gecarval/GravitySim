@@ -6,7 +6,7 @@
 /*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/23 13:59:53 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/09/27 15:00:36 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,7 +162,29 @@ void	process_velocity(t_data *data)
 	}
 }
 
-void	apply_attraction_onquad(t_particle *m, t_quadtree* qtree, t_data *data)
+t_vector	getmidpoint_onquad(t_quadtree *qt)
+{
+	int		x;
+	int		y;
+	int		i;
+
+	x = 0;
+	y = 0;
+	i = -1;
+	while (++i < qt->point_count)
+		x += qt->points[i].part->pos.x;
+	i = -1;
+	while (++i < qt->point_count)
+		y += qt->points[i].part->pos.y;
+	if (qt->point_count != 0)
+	{
+		x /= qt->point_count;
+		y /= qt->point_count;
+	}
+	return (create_vector(x, y));
+}
+
+void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
 {
 	t_particle	*p;
 	t_particle	temp;
@@ -193,8 +215,7 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree* qtree, t_data *data)
 	}
 	else
 	{
-		temp.pos.x = qtree->boundary.x;
-		temp.pos.y = qtree->boundary.y;
+		temp.pos = getmidpoint_onquad(qtree);
 		temp.mass = m->mass * qtree->point_count;
 		attraction(m, &temp);
 	}
@@ -219,13 +240,16 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 	i = -1;
 	while (++i < qt->point_count)
 	{
-		j = i;
+		j = i - 1;
 		while (++j < qt->point_count)
 		{
 			tmp = (qt->points[i]).part;
 			tmp2 = (qt->points[j]).part;
-			dist = vectorsub(tmp2->pos, tmp->pos);
-			collision(tmp, tmp2, vector_magsqsqrt(dist));
+			if (tmp != tmp2)
+			{
+				dist = vectorsub(tmp2->pos, tmp->pos);
+				collision(tmp, tmp2, vector_magsqsqrt(dist));
+			}
 		}
 	}
 }
