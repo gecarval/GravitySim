@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/21 16:57:08 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 17:34:34 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 09:42:50 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ int	main(int argc, char **argv)
 	data->anigsim = -1;
 	data->click_hold = 0;
 	data->show_tree = -1;
+	data->show_collision_tree = -1;
 	data->timing = 0;
 	water_mark(data);
 	mlx_mouse_hook(data->win, mouse_click, data);

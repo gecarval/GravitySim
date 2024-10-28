@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 17:53:51 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 20:04:23 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 09:38:16 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,36 +84,39 @@ void	draw_line(t_delta x, t_delta y, t_data *data, int color)
 	}
 }
 
-void	drawcircle(int xc, int yc, int x, int y, t_data *data, int color) 
+void	drawcircle(int xc, int yc, int x, int y, t_data *data, int color)
 {
-	pixel_to_img(xc + x, yc + y, data, color); 
-	pixel_to_img(xc - x, yc + y, data, color); 
-	pixel_to_img(xc + x, yc - y, data, color); 
-	pixel_to_img(xc - x, yc - y, data, color); 
-	pixel_to_img(xc + y, yc + x, data, color); 
-	pixel_to_img(xc - y, yc + x, data, color); 
-	pixel_to_img(xc + y, yc - x, data, color); 
-	pixel_to_img(xc - y, yc - x, data, color); 
+	pixel_to_img(xc + x, yc + y, data, color);
+	pixel_to_img(xc - x, yc + y, data, color);
+	pixel_to_img(xc + x, yc - y, data, color);
+	pixel_to_img(xc - x, yc - y, data, color);
+	pixel_to_img(xc + y, yc + x, data, color);
+	pixel_to_img(xc - y, yc + x, data, color);
+	pixel_to_img(xc + y, yc - x, data, color);
+	pixel_to_img(xc - y, yc - x, data, color);
 }
 
-void	circlebres(int xc, int yc, int r, t_data *data, int color) 
+void	circlebres(int xc, int yc, int r, t_data *data, int color)
 {
-	int x = 0, y = r; 
-	int d = 3 - 2 * r; 
-	drawcircle(xc, yc, x, y, data, color); 
-	while (y >= x) 
+	int	x = 0, y;
+	int	d;
+
+	x = 0, y = r;
+	d = 3 - 2 * r;
+	drawcircle(xc, yc, x, y, data, color);
+	while (y >= x)
 	{
-		x++; 
-		if (d > 0) 
+		x++;
+		if (d > 0)
 		{
-			y--;  
-			d = d + 4 * (x - y) + 10; 
-		} 
+			y--;
+			d = d + 4 * (x - y) + 10;
+		}
 		else
-			d = d + 4 * x + 6; 
-		drawcircle(xc, yc, x, y, data, color); 
-	} 
-} 
+			d = d + 4 * x + 6;
+		drawcircle(xc, yc, x, y, data, color);
+	}
+}
 
 void	draw_rectang(t_objinf a, t_data *data)
 {
@@ -129,13 +132,11 @@ void	draw_rectang(t_objinf a, t_data *data)
 	}
 }
 
-void	draw_rectangle(t_rectangle r, t_data *data)
+void	draw_rectangle(t_rectangle r, t_data *data, int color)
 {
 	t_delta	dx;
 	t_delta	dy;
-	int	color;
 
-	color = 0xDD00DD;
 	defdel(&dx, r.left, r.right);
 	defdel(&dy, r.top, r.top);
 	draw_line(dx, dy, data, color);

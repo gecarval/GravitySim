@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   gravitysim.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/27 15:00:36 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 13:16:45 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "./includes/renderer.h"
 
-float_t	mapfloat_t(float_t value, float_t inmin, float_t inmax, float_t outmin, float_t outmax)
+float_t	mapfloat_t(float_t value, float_t inmin, float_t inmax, float_t outmin,
+		float_t outmax)
 {
 	return ((value - inmin) * (outmax - outmin) / (inmax - inmin) + outmin);
 }
@@ -25,10 +26,11 @@ int	create_rgb_color(int r, int g, int b)
 int	set_redshift(t_particle *tmp, t_data *data)
 {
 	int		redintensity;
-	float_t		speedmag;
+	float_t	speedmag;
 
 	speedmag = vector_magsq(tmp->vel);
-	redintensity = (int)mapfloat_t(speedmag, 0.0f, data->num_of_particles / 500, 255.0f, 0.0f);
+	redintensity = (int)mapfloat_t(speedmag, 0.0f, data->num_of_particles / 500,
+			255.0f, 0.0f);
 	if (redintensity > 255)
 		redintensity = 255;
 	if (redintensity < 0)
@@ -56,7 +58,8 @@ void	render_particle(t_data *data)
 		{
 			j = tmp->r;
 			while (--j >= 0)
-				circlebres((int)tmp->pos.x, (int)tmp->pos.y, j, data, tmp->color);
+				circlebres((int)tmp->pos.x, (int)tmp->pos.y, j, data,
+					tmp->color);
 		}
 		tmp->color = WHITE;
 		tmp = tmp->next;
@@ -71,7 +74,7 @@ void	applyforce(t_particle *mover, t_vector force)
 	mover->acel = vectoradd(mover->acel, f);
 }
 
-void	attraction(t_particle *mover, t_particle *other)
+void	attraction(t_particle *mover, t_particle *other, t_data *data)
 {
 	t_vector	force;
 	float_t		strength;
@@ -84,10 +87,12 @@ void	attraction(t_particle *mover, t_particle *other)
 	dist = constrain_float_t(vector_magsq(force), 100, 1000);
 	strength = (g * other->mass) / dist;
 	force = vector_setmagmult(force, -strength);
+	pthread_mutex_lock(&data->mutex);
 	applyforce(mover, force);
+	pthread_mutex_unlock(&data->mutex);
 }
 
-void	collision(t_particle *p1, t_particle *p2, float_t d)
+void	collision(t_particle *p1, t_particle *p2, float_t d, t_data *data)
 {
 	t_vector	impactvector;
 	t_vector	deltava;
@@ -105,9 +110,13 @@ void	collision(t_particle *p1, t_particle *p2, float_t d)
 		overlap = d - (p1->r + p2->r);
 		dir = impactvector;
 		dir = vector_setmagmult(dir, overlap * 0.5);
+		pthread_mutex_lock(&data->mutex);
 		p1->pos = vectoradd(p1->pos, dir);
+		pthread_mutex_unlock(&data->mutex);
 		dir = vectormult(dir, -1);
+		pthread_mutex_lock(&data->mutex);
 		p2->pos = vectoradd(p2->pos, dir);
+		pthread_mutex_unlock(&data->mutex);
 		d = p1->r + p2->r;
 		impactvector = vector_setmagmult(impactvector, d);
 		msum = p1->mass + p2->mass;
@@ -116,10 +125,14 @@ void	collision(t_particle *p1, t_particle *p2, float_t d)
 		den = msum * d * d;
 		deltava = impactvector;
 		deltava = vectormult(deltava, 1 * p2->mass * num / den);
+		pthread_mutex_lock(&data->mutex);
 		p1->vel = vectoradd(p1->vel, deltava);
+		pthread_mutex_unlock(&data->mutex);
 		deltavb = impactvector;
 		deltavb = vectormult(deltavb, -1 * p1->mass * num / den);
+		pthread_mutex_lock(&data->mutex);
 		p2->vel = vectoradd(p2->vel, deltavb);
+		pthread_mutex_unlock(&data->mutex);
 	}
 }
 
@@ -154,19 +167,31 @@ void	process_velocity(t_data *data)
 	{
 		tmp->prev_pos = tmp->pos;
 		update_position(tmp);
-		if (tmp->pos.x > data->winx || tmp->pos.x < 0)
-			tmp->vel.x = -tmp->vel.x;
-		if(tmp->pos.y > data->winy || tmp->pos.y < 0)
-			tmp->vel.y = -tmp->vel.y;
+		if (tmp->pos.x > data->winx - tmp->r || tmp->pos.x < 0 + tmp->r)
+		{
+			tmp->vel.x = tmp->vel.x * -1;
+			if (tmp->pos.x > data->winx - tmp->r)
+				tmp->pos.x = data->winx - tmp->r - 1;
+			if (tmp->pos.x < 0 + tmp->r)
+				tmp->pos.x = 0 + tmp->r + 1;
+		}
+		if (tmp->pos.y > data->winy - tmp->r || tmp->pos.y < 0 + tmp->r)
+		{
+			tmp->vel.y = tmp->vel.y * -1;
+			if (tmp->pos.y > data->winy - tmp->r)
+				tmp->pos.y = data->winy - tmp->r - 1;
+			if (tmp->pos.y < 0 + tmp->r)
+				tmp->pos.y = 0 + tmp->r + 1;
+		}
 		tmp = tmp->next;
 	}
 }
 
 t_vector	getmidpoint_onquad(t_quadtree *qt)
 {
-	int		x;
-	int		y;
-	int		i;
+	int	x;
+	int	y;
+	int	i;
 
 	x = 0;
 	y = 0;
@@ -189,8 +214,8 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
 	t_particle	*p;
 	t_particle	temp;
 	t_vector	qdist;
-	float_t 	d;
-	int		i;
+	float_t		d;
+	int			i;
 
 	if (qtree->divided && qtree->points == NULL)
 	{
@@ -210,21 +235,21 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
 		{
 			p = qtree->points[i].part;
 			if (m != p)
-				attraction(m, p);
+				attraction(m, p, data);
 		}
 	}
 	else
 	{
 		temp.pos = getmidpoint_onquad(qtree);
 		temp.mass = m->mass * qtree->point_count;
-		attraction(m, &temp);
+		attraction(m, &temp, data);
 	}
 }
 
 void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 {
-	int		i;
-	int		j;
+	int			i;
+	int			j;
 	t_vector	dist;
 	t_particle	*tmp;
 	t_particle	*tmp2;
@@ -248,7 +273,7 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 			if (tmp != tmp2)
 			{
 				dist = vectorsub(tmp2->pos, tmp->pos);
-				collision(tmp, tmp2, vector_magsqsqrt(dist));
+				collision(tmp, tmp2, vector_magsqsqrt(dist), data);
 			}
 		}
 	}
@@ -256,79 +281,121 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 
 void	*partition_process(void *ptr)
 {
-	t_data		*data;
+	t_processor	*processors;
 	t_particle	*tmp;
-	int		i;
+	int			i;
 
 	i = 0;
-	data = (t_data *)ptr;
-	tmp = data->gsim->part;
-	while (i < data->num_of_particles / 2)
+	processors = (t_processor *)ptr;
+	tmp = processors->data->gsim->part;
+	while (i < processors->start)
 	{
 		tmp = tmp->next;
 		i++;
 	}
-	while (i < data->num_of_particles)
+	while (i < processors->end)
 	{
-		apply_attraction_onquad(tmp, data->qt, data);
+		apply_attraction_onquad(tmp, processors->data->qt, processors->data);
 		tmp = tmp->next;
 		i++;
 	}
+	//	printf("Thread %d finished\n", (processors->start
+	//			/ (processors->data->num_of_particles / MAX_THREADS)) + 1);
+	return (NULL);
+}
+
+void	*partition_collision(void *ptr)
+{
+	t_processor	*processors;
+
+	processors = (t_processor *)ptr;
+	apply_collision_onquad(processors->qt, processors->data);
+	//	ft_putstr_fd("Collision applied\n", 1);
 	return (NULL);
 }
 
 void	process_physics_quad(t_data *data)
 {
-	int		i;
-	int		k;
+	int			i;
+	int			k;
 	t_point		pt;
 	t_particle	*tmp;
-	pthread_t	processor;
+	t_quadtree	*qt;
 
 	i = -1;
 	tmp = data->gsim->part;
 	data->qt = create_quadtree_fromglobals(data->winx, data->winy);
+	// printf("Building quadtree\n");
 	while (++i < data->num_of_particles)
 	{
 		pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
 		insert_point(data->qt, pt);
 		tmp = tmp->next;
 	}
-	if (pthread_create(&processor, NULL, partition_process, data) != 0)
+	// printf("Quadtree built\n");
+	// printf("Applying forces\n");
+	i = 0;
+	pthread_mutex_init(&data->mutex, NULL);
+	while (i < MAX_THREADS)
 	{
-		free_quadtree(data->qt);
-		display_error(data, "error on thread create\n");
-	}
-	i = -1;
-	tmp = data->gsim->part;
-	while (++i < data->num_of_particles / 2)
-	{
-		apply_attraction_onquad(tmp, data->qt, data);
-		tmp = tmp->next;
-	}
-	if (pthread_join(processor, NULL) != 0)
-	{
-		free_quadtree(data->qt);
-		display_error(data, "error on thread join\n");
+		data->processors[i].data = data;
+		data->processors[i].start = i * data->num_of_particles / MAX_THREADS;
+		data->processors[i].end = (i + 1) * data->num_of_particles
+			/ MAX_THREADS;
+		if (pthread_create(&data->processors[i].processor, NULL,
+				partition_process, &data->processors[i]) != 0)
+		{
+			free_quadtree(data->qt);
+			display_error(data, "error on thread create\n");
+		}
+		i++;
 	}
 	if (data->show_tree == 1)
-		display_quadtree_boundaries(data->qt, data);
-	free_quadtree(data->qt);
+		display_quadtree_boundaries(data->qt, data, 0xDD00DD);
 	k = -1;
 	while (++k < COLLISION_STEPS)
 	{
 		i = -1;
 		tmp = data->gsim->part;
-		data->qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2, data->winx, data->winy, 3);
+		qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2,
+				data->winx, data->winy, 3);
+		// printf("Applying collision for the %d time\n", k + 1);
+		// printf("Building quadtree number %d\n", k + 1);
 		while (++i < data->num_of_particles)
 		{
 			pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
-			insert_point(data->qt, pt);
+			insert_point(qt, pt);
 			tmp = tmp->next;
 		}
-		apply_collision_onquad(data->qt, data);
-		free_quadtree(data->qt);
+		// printf("Quadtree number %d built\n", k + 1);
+		if (data->show_collision_tree == 1)
+			display_quadtree_boundaries(qt, data, 0xDDDD00);
+		data->col_processors[k].data = data;
+		data->col_processors[k].qt = qt;
+		if (pthread_create(&data->col_processors[k].processor, NULL,
+				partition_collision, &data->col_processors[k]) != 0)
+			display_error(data, "error on thread create\n");
 	}
+	k = -1;
+	while (++k < COLLISION_STEPS)
+	{
+		// printf("Joining thread %d\n", k + 1);
+		if (pthread_join(data->col_processors[k].processor, NULL) != 0)
+			display_error(data, "error on thread join\n");
+		free_quadtree(data->col_processors[k].qt);
+	}
+	i = -1;
+	while (++i < MAX_THREADS)
+	{
+		if (pthread_join(data->processors[i].processor, NULL) != 0)
+		{
+			free_quadtree(data->qt);
+			display_error(data, "error on thread join\n");
+		}
+	}
+	pthread_mutex_destroy(&data->mutex);
+	free_quadtree(data->qt);
+	// printf("all forces applied\n");
 }
 
 void	part_sim(t_data *data)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   quadtree.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 19:34:34 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/20 20:24:49 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 09:38:11 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,29 +45,36 @@ void	highlight_point(t_point pt, int size, t_data *data)
 // RECTANGLE HELPERS FUNCTIONS
 t_rectangle	create_rectangle(float_t x, float_t y, float_t w, float_t h)
 {
-	return ((t_rectangle){x, y, w, h, x - w / 2, x + w / 2, y - h / 2, y + h / 2});
+	return ((t_rectangle){x, y, w, h, x - w / 2, x + w / 2, y - h / 2, y + h
+		/ 2});
 }
 
 int	quadcontains(t_rectangle *r, t_point *p)
 {
-	return (r->left <= p->x && p->x <= r->right && r->top <= p->y && p->y <= r->bottom);
+	return (r->left <= p->x && p->x <= r->right && r->top <= p->y
+		&& p->y <= r->bottom);
 }
 
 int	quadintersects(t_rectangle *r, t_rectangle *range)
 {
-	return (!(r->right < range->left || range->right < r->left || r->bottom < range->top || range->bottom < r->top));
+	return (!(r->right < range->left || range->right < r->left
+			|| r->bottom < range->top || range->bottom < r->top));
 }
 
 t_rectangle	subdivide_rectangle(t_rectangle *r, const char *quadrant)
 {
 	if (ft_strncmp(quadrant, "ne", 2) == 0)
-		return (create_rectangle(r->x + r->w / 4, r->y - r->h / 4, r->w / 2, r->h / 2));
+		return (create_rectangle(r->x + r->w / 4, r->y - r->h / 4, r->w / 2,
+				r->h / 2));
 	else if (ft_strncmp(quadrant, "nw", 2) == 0)
-		return (create_rectangle(r->x - r->w / 4, r->y - r->h / 4, r->w / 2, r->h / 2));
+		return (create_rectangle(r->x - r->w / 4, r->y - r->h / 4, r->w / 2,
+				r->h / 2));
 	else if (ft_strncmp(quadrant, "se", 2) == 0)
-		return (create_rectangle(r->x + r->w / 4, r->y + r->h / 4, r->w / 2, r->h / 2));
+		return (create_rectangle(r->x + r->w / 4, r->y + r->h / 4, r->w / 2,
+				r->h / 2));
 	else if (ft_strncmp(quadrant, "sw", 2) == 0)
-		return (create_rectangle(r->x - r->w / 4, r->y + r->h / 4, r->w / 2, r->h / 2));
+		return (create_rectangle(r->x - r->w / 4, r->y + r->h / 4, r->w / 2,
+				r->h / 2));
 	return (create_rectangle(0, 0, 0, 0));
 }
 
@@ -108,7 +115,8 @@ t_circle	create_circle(float_t x, float_t y, float_t r)
 
 int	circontains(t_circle *c, t_point *p)
 {
-	return (((p->x - c->x) * (p->x - c->x)) + ((p->y - c->y) * (p->y - c->y)) <= c->rsqrt);
+	return (((p->x - c->x) * (p->x - c->x)) + ((p->y - c->y) * (p->y
+				- c->y)) <= c->rsqrt);
 }
 
 int	cirintersects(t_circle *c, t_rectangle *range)
@@ -132,9 +140,12 @@ int	cirintersects(t_circle *c, t_rectangle *range)
 }
 
 // QUADTREE HELPER FUNCTIONS
-t_quadtree	*create_quadtree(t_rectangle boundary, unsigned int capacity, unsigned int depth)
+t_quadtree	*create_quadtree(t_rectangle boundary, unsigned int capacity,
+		unsigned int depth)
 {
-	t_quadtree	*qt;
+	t_quadtree		*qt;
+	unsigned int	i;
+	t_point			*tmp;
 
 	qt = (t_quadtree *)malloc(sizeof(t_quadtree));
 	if (!qt)
@@ -144,8 +155,6 @@ t_quadtree	*create_quadtree(t_rectangle boundary, unsigned int capacity, unsigne
 		free(qt);
 	if (!qt->points)
 		return (NULL);
-	unsigned int	i;
-	t_point	*tmp;
 	i = 0;
 	tmp = qt->points;
 	while (i < capacity)
@@ -183,7 +192,8 @@ t_quadtree	*create_quadtree_fromrectangle(t_rectangle rect, int capacity)
 	return (create_quadtree(rect, capacity, 0));
 }
 
-t_quadtree	*create_quadtree_fromvalues(float_t x, float_t y, float_t w, float_t h, int capacity)
+t_quadtree	*create_quadtree_fromvalues(float_t x, float_t y, float_t w,
+		float_t h, int capacity)
 {
 	t_rectangle	rect;
 
@@ -196,7 +206,7 @@ t_quadtree	*create_quadtree_fromvalues(float_t x, float_t y, float_t w, float_t 
 t_quadtree	**get_all_children(t_quadtree *qt)
 {
 	t_quadtree	**children;
-	int		i;
+	int			i;
 
 	children = (t_quadtree **)malloc(4 * sizeof(t_quadtree *));
 	if (qt->divided)
@@ -233,23 +243,26 @@ t_quadtree	*get_one_children(t_quadtree *qt, const char *quadrant)
 
 void	subdivide_tree(t_quadtree *qt)
 {
-	int	i;
+	int		i;
 	bool	inserted;
 	t_point	p;
 
-	qt->northeast = create_quadtree(subdivide_rectangle(&qt->boundary, "ne"), qt->capacity, qt->depth + 1);
-	qt->northwest = create_quadtree(subdivide_rectangle(&qt->boundary, "nw"), qt->capacity, qt->depth + 1);
-	qt->southeast = create_quadtree(subdivide_rectangle(&qt->boundary, "se"), qt->capacity, qt->depth + 1);
-	qt->southwest = create_quadtree(subdivide_rectangle(&qt->boundary, "sw"), qt->capacity, qt->depth + 1);
+	qt->northeast = create_quadtree(subdivide_rectangle(&qt->boundary, "ne"),
+			qt->capacity, qt->depth + 1);
+	qt->northwest = create_quadtree(subdivide_rectangle(&qt->boundary, "nw"),
+			qt->capacity, qt->depth + 1);
+	qt->southeast = create_quadtree(subdivide_rectangle(&qt->boundary, "se"),
+			qt->capacity, qt->depth + 1);
+	qt->southwest = create_quadtree(subdivide_rectangle(&qt->boundary, "sw"),
+			qt->capacity, qt->depth + 1);
 	qt->divided = true;
 	i = -1;
 	while (++i < qt->point_count)
 	{
 		p = qt->points[i];
-		inserted = insert_point(qt->northeast, p) ||
-			insert_point(qt->northwest, p) ||
-			insert_point(qt->southeast, p) ||
-			insert_point(qt->southwest, p);
+		inserted = insert_point(qt->northeast, p) || insert_point(qt->northwest,
+				p) || insert_point(qt->southeast, p)
+			|| insert_point(qt->southwest, p);
 		if (!inserted)
 			inserted = 0;
 	}
@@ -273,13 +286,12 @@ bool	insert_point(t_quadtree *qt, t_point p)
 		subdivide_tree(qt);
 	if (!qt->northeast || !qt->northwest || !qt->southeast || !qt->southwest)
 		return (0);
-	return insert_point(qt->northeast, p) ||
-		insert_point(qt->northwest, p) ||
-		insert_point(qt->southeast, p) ||
-		insert_point(qt->southwest, p);
+	return (insert_point(qt->northeast, p) || insert_point(qt->northwest, p)
+		|| insert_point(qt->southeast, p) || insert_point(qt->southwest, p));
 }
 
-void	query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[], int *found_count)
+void	query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[],
+		int *found_count)
 {
 	int	i;
 
@@ -299,10 +311,11 @@ void	query_quadtree(t_quadtree *qt, t_rectangle *range, t_point *found[], int *f
 			found[(*found_count)++] = &qt->points[i];
 }
 
-void	query_quadtree_circle(t_quadtree *qt, t_circle *range, t_point *found[], int *found_count)
+void	query_quadtree_circle(t_quadtree *qt, t_circle *range, t_point *found[],
+		int *found_count)
 {
 	int	i;
-	
+
 	if (!qt)
 		return ;
 	if (qt->divided)
@@ -331,7 +344,7 @@ void	query_quadtree_circle(t_quadtree *qt, t_circle *range, t_point *found[], in
 
 int	report_query_circle(t_quadtree *qt, t_data *data, t_circle range)
 {
-	t_point		*found[100000];
+	t_point	*found[100000];
 	int		found_count;
 	int		i;
 
@@ -346,28 +359,28 @@ int	report_query_circle(t_quadtree *qt, t_data *data, t_circle range)
 
 int	report_query(t_quadtree *qt, t_data *data, t_rectangle range)
 {
-	t_point		*found[100000];
+	t_point	*found[100000];
 	int		found_count;
 	int		i;
 
 	i = -1;
 	found_count = 0;
-	draw_rectangle(range, data);
+	draw_rectangle(range, data, 0x00DD00);
 	query_quadtree(qt, &range, found, &found_count);
 	while (++i < found_count)
 		highlight_point(*found[i], found[i]->part->r, data);
 	return (found_count);
 }
 
-void	display_quadtree_boundaries(t_quadtree *qt, t_data *data)
+void	display_quadtree_boundaries(t_quadtree *qt, t_data *data, int color)
 {
-	draw_rectangle(qt->boundary, data);
+	draw_rectangle(qt->boundary, data, color);
 	if (qt->divided)
 	{
-		display_quadtree_boundaries(qt->northeast, data);
-		display_quadtree_boundaries(qt->northwest, data);
-		display_quadtree_boundaries(qt->southeast, data);
-		display_quadtree_boundaries(qt->southwest, data);
+		display_quadtree_boundaries(qt->northeast, data, color);
+		display_quadtree_boundaries(qt->northwest, data, color);
+		display_quadtree_boundaries(qt->southeast, data, color);
+		display_quadtree_boundaries(qt->southwest, data, color);
 	}
 }
 
@@ -376,8 +389,9 @@ void	print_quadtree(t_quadtree *qt)
 	int	i;
 
 	if (!qt)
-		return;
-	printf("QuadTree Boundary: x=%.2f, y=%.2f, w=%.2f, h=%.2f\n", qt->boundary.x, qt->boundary.y, qt->boundary.w, qt->boundary.h);
+		return ;
+	printf("QuadTree Boundary: x=%.2f, y=%.2f, w=%.2f, h=%.2f\n",
+		qt->boundary.x, qt->boundary.y, qt->boundary.w, qt->boundary.h);
 	i = -1;
 	while (++i < qt->point_count)
 		printf("Point: (%.2f, %.2f)\n", qt->points[i].x, qt->points[i].y);

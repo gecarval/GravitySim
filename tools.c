@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   tools.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 17:38:51 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/23 14:11:24 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 09:43:36 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,8 @@ void	put_particle(int x, int y, t_data *data)
 		display_error(data, "part malloc error\n");
 	tmp->pos = create_vector(x, y);
 	tmp->prev_pos = tmp->pos;
-	tmp->vel = create_vector(data->mposx - data->pmposx, data->mposy - data->pmposy);
+	tmp->vel = create_vector(data->mposx - data->pmposx, data->mposy
+			- data->pmposy);
 	limit_velocity(tmp, 1);
 	tmp->acel = create_vector(0, 0);
 	tmp->mass = 1;
@@ -55,7 +56,7 @@ void	put_particle(int x, int y, t_data *data)
 int	mlx_anim(t_data *data)
 {
 	int	i;
-	
+
 	if (data->anigsim == 1)
 	{
 		part_sim(data);
@@ -72,7 +73,8 @@ int	mlx_anim(t_data *data)
 				data->click_hold = 0;
 			i = -1;
 			while (++i < 3)
-				put_particle(data->mposx + rand() % 5, data->mposy + rand() % 5, data);
+				put_particle(data->mposx + rand() % 5, data->mposy + rand() % 5,
+					data);
 			data->pmposx = data->mposx;
 			data->pmposy = data->mposy;
 		}
@@ -95,6 +97,8 @@ int	mlx_cooked(int key, t_data *data)
 		reset_pos(data);
 	if (key == 'y')
 		data->show_tree *= -1;
+	if (key == 'u')
+		data->show_collision_tree *= -1;
 	if (key == ' ')
 	{
 		render_background(data, 0x000000);
@@ -121,16 +125,16 @@ void	pixel_to_img_float(float_t x, float_t y, t_data *data, int color)
 
 	if ((x < 0 || x > data->winx) || (y < 0 || y > data->winy))
 		return ;
-	pixel = data->img->img_px + (int)y * data->img->llen + (int)x * (data->img->bpp / 8);
+	pixel = data->img->img_px + (int)y * data->img->llen + (int)x
+		* (data->img->bpp / 8);
 	*(int *)pixel = color;
 }
 
 void	water_mark(t_data *data)
 {
-	mlx_string_put(data->ini, data->win,
-		15, 15, 120000, "renders by gecarval");
-	mlx_string_put(data->ini, data->win,
-		15, 60, 120000, "Press 1 for Life Sim");
+	mlx_string_put(data->ini, data->win, 15, 15, 120000, "renders by gecarval");
+	mlx_string_put(data->ini, data->win, 15, 60, 120000,
+		"Press 1 for Life Sim");
 }
 
 void	render_background(t_data *data, int color)
@@ -188,7 +192,7 @@ t_delta	revdel(t_delta a)
 // RULES
 void	reset_pos(t_data *data)
 {
-	int		i;
+	int			i;
 	t_particle	*tmp;
 
 	i = 0;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   calls.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 20:32:15 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/27 14:57:05 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/10/28 13:16:27 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,10 @@ void	free_part(t_particle *part, t_data *data)
 
 int	exit_data(t_data *data, int fd)
 {
+	if (data != NULL && data->col_processors != NULL)
+		free(data->col_processors);
+	if (data != NULL && data->processors != NULL)
+		free(data->processors);
 	if (data != NULL && data->img != NULL && data->img->img_ptr != NULL)
 		mlx_destroy_image(data->ini, data->img->img_ptr);
 	if (data != NULL && data->img != NULL)
@@ -64,17 +68,24 @@ void	ft_set_params(t_data *data, int part_n, int radius)
 
 void	ft_init_program(t_data *data)
 {
-	ft_set_params(data, 1000, 1);
+	ft_set_params(data, 2000, 1);
 	data->ini = mlx_init();
 	if (!data->ini)
 		display_error(data, "init error\n");
-	data->win = mlx_new_window(data->ini, data->winx, data->winy, "Gravity Sim");
+	data->win = mlx_new_window(data->ini, data->winx, data->winy,
+			"Gravity Sim");
 	if (!data->win)
 		display_error(data, "window error\n");
 	data->gsim = (t_gravsim *)malloc(sizeof(t_gravsim));
 	if (!data->gsim)
 		display_error(data, "gravitysim malloc error\n");
 	data->gsim->part = NULL;
+	data->processors = (t_processor *)malloc(sizeof(t_processor) * MAX_THREADS);
+	if (!data->processors)
+		display_error(data, "processors malloc error\n");
+	data->col_processors = (t_processor *)malloc(sizeof(t_processor) * COLLISION_STEPS);
+	if (!data->col_processors)
+		display_error(data, "col_processors malloc error\n");
 	data->img = (t_img *)malloc(sizeof(t_img));
 	if (!data->img)
 		display_error(data, "img malloc error\n");
