@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 17:38:51 by gecarval          #+#    #+#             */
-/*   Updated: 2024/10/28 09:43:36 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/08 08:45:13 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,8 @@ void	put_particle(int x, int y, t_data *data)
 	tmp = (t_particle *)malloc(sizeof(t_particle));
 	if (!tmp)
 		display_error(data, "part malloc error\n");
+	tmp->next = NULL;
+	pthread_mutex_init(&tmp->mutex, NULL);
 	tmp->pos = create_vector(x, y);
 	tmp->prev_pos = tmp->pos;
 	tmp->vel = create_vector(data->mposx - data->pmposx, data->mposy

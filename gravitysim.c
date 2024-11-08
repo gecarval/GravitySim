@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/10/28 13:16:45 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/08 08:43:09 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,7 @@ void	applyforce(t_particle *mover, t_vector force)
 	mover->acel = vectoradd(mover->acel, f);
 }
 
-void	attraction(t_particle *mover, t_particle *other, t_data *data)
+void	attraction(t_particle *mover, t_particle *other)
 {
 	t_vector	force;
 	float_t		strength;
@@ -87,12 +87,12 @@ void	attraction(t_particle *mover, t_particle *other, t_data *data)
 	dist = constrain_float_t(vector_magsq(force), 100, 1000);
 	strength = (g * other->mass) / dist;
 	force = vector_setmagmult(force, -strength);
-	pthread_mutex_lock(&data->mutex);
+	pthread_mutex_lock(&mover->mutex);
 	applyforce(mover, force);
-	pthread_mutex_unlock(&data->mutex);
+	pthread_mutex_unlock(&mover->mutex);
 }
 
-void	collision(t_particle *p1, t_particle *p2, float_t d, t_data *data)
+void	collision(t_particle *p1, t_particle *p2, float_t d)
 {
 	t_vector	impactvector;
 	t_vector	deltava;
@@ -110,13 +110,13 @@ void	collision(t_particle *p1, t_particle *p2, float_t d, t_data *data)
 		overlap = d - (p1->r + p2->r);
 		dir = impactvector;
 		dir = vector_setmagmult(dir, overlap * 0.5);
-		pthread_mutex_lock(&data->mutex);
+		pthread_mutex_lock(&p1->mutex);
 		p1->pos = vectoradd(p1->pos, dir);
-		pthread_mutex_unlock(&data->mutex);
+		pthread_mutex_unlock(&p1->mutex);
 		dir = vectormult(dir, -1);
-		pthread_mutex_lock(&data->mutex);
+		pthread_mutex_lock(&p2->mutex);
 		p2->pos = vectoradd(p2->pos, dir);
-		pthread_mutex_unlock(&data->mutex);
+		pthread_mutex_unlock(&p2->mutex);
 		d = p1->r + p2->r;
 		impactvector = vector_setmagmult(impactvector, d);
 		msum = p1->mass + p2->mass;
@@ -125,14 +125,14 @@ void	collision(t_particle *p1, t_particle *p2, float_t d, t_data *data)
 		den = msum * d * d;
 		deltava = impactvector;
 		deltava = vectormult(deltava, 1 * p2->mass * num / den);
-		pthread_mutex_lock(&data->mutex);
+		pthread_mutex_lock(&p1->mutex);
 		p1->vel = vectoradd(p1->vel, deltava);
-		pthread_mutex_unlock(&data->mutex);
+		pthread_mutex_unlock(&p1->mutex);
 		deltavb = impactvector;
 		deltavb = vectormult(deltavb, -1 * p1->mass * num / den);
-		pthread_mutex_lock(&data->mutex);
+		pthread_mutex_lock(&p2->mutex);
 		p2->vel = vectoradd(p2->vel, deltavb);
-		pthread_mutex_unlock(&data->mutex);
+		pthread_mutex_unlock(&p2->mutex);
 	}
 }
 
@@ -235,14 +235,14 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
 		{
 			p = qtree->points[i].part;
 			if (m != p)
-				attraction(m, p, data);
+				attraction(m, p);
 		}
 	}
 	else
 	{
 		temp.pos = getmidpoint_onquad(qtree);
 		temp.mass = m->mass * qtree->point_count;
-		attraction(m, &temp, data);
+		attraction(m, &temp);
 	}
 }
 
@@ -272,8 +272,12 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 			tmp2 = (qt->points[j]).part;
 			if (tmp != tmp2)
 			{
+				pthread_mutex_lock(&tmp->mutex);
+				pthread_mutex_lock(&tmp2->mutex);
 				dist = vectorsub(tmp2->pos, tmp->pos);
-				collision(tmp, tmp2, vector_magsqsqrt(dist), data);
+				pthread_mutex_unlock(&tmp->mutex);
+				pthread_mutex_unlock(&tmp2->mutex);
+				collision(tmp, tmp2, vector_magsqsqrt(dist));
 			}
 		}
 	}
@@ -335,7 +339,6 @@ void	process_physics_quad(t_data *data)
 	// printf("Quadtree built\n");
 	// printf("Applying forces\n");
 	i = 0;
-	pthread_mutex_init(&data->mutex, NULL);
 	while (i < MAX_THREADS)
 	{
 		data->processors[i].data = data;
@@ -363,7 +366,9 @@ void	process_physics_quad(t_data *data)
 		// printf("Building quadtree number %d\n", k + 1);
 		while (++i < data->num_of_particles)
 		{
+			pthread_mutex_lock(&tmp->mutex);
 			pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
+			pthread_mutex_unlock(&tmp->mutex);
 			insert_point(qt, pt);
 			tmp = tmp->next;
 		}
@@ -393,7 +398,6 @@ void	process_physics_quad(t_data *data)
 			display_error(data, "error on thread join\n");
 		}
 	}
-	pthread_mutex_destroy(&data->mutex);
 	free_quadtree(data->qt);
 	// printf("all forces applied\n");
 }

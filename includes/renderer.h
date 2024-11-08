@@ -38,7 +38,7 @@
 # define WHITE 0xDDDDFF
 
 // QUAD TREE
-# define DEFAULT_CAPACITY 32
+# define DEFAULT_CAPACITY 1024
 # define MAX_DEPTH 1024
 
 // STRUCTS
@@ -97,6 +97,7 @@ typedef struct s_rectangle
 
 typedef struct s_particle
 {
+	pthread_mutex_t			mutex;
 	t_vector				prev_pos;
 	t_vector				pos;
 	t_vector				vel;
@@ -182,7 +183,6 @@ typedef struct s_data
 	t_quadtree				*qt;
 	t_processor				*processors;
 	t_processor				*col_processors;
-	pthread_mutex_t			mutex;
 	int						num_of_particles;
 	int						part_num;
 	int						radius;
@@ -295,7 +295,8 @@ int							report_query_circle(t_quadtree *qt, t_data *data,
 								t_circle range);
 void						display_quadtree_boundaries(t_quadtree *qt,
 								t_data *data, int color);
-void						draw_rectangle(t_rectangle r, t_data *data, int color);
+void						draw_rectangle(t_rectangle r, t_data *data,
+								int color);
 void						print_quadtree(t_quadtree *qt);
 void						free_quadtree(t_quadtree *qt);
 // DELTAS

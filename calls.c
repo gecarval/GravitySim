@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 20:32:15 by gecarval          #+#    #+#             */
-/*   Updated: 2024/10/28 13:16:27 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/08 08:26:26 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ void	free_part(t_particle *part, t_data *data)
 	{
 		tmp = part;
 		part = part->next;
+		pthread_mutex_destroy(&tmp->mutex);
 		free(tmp);
 	}
 }

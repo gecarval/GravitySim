@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   reads.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: anonymous <anonymous@student.42.fr>        +#+  +:+       +#+        */
+/*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 20:37:31 by gecarval          #+#    #+#             */
-/*   Updated: 2024/09/19 20:34:23 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/08 08:16:35 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ void	create_gsim(t_data *data)
 	tmp = data->gsim->part;
 	while (++i < data->num_of_particles)
 	{
+		pthread_mutex_init(&tmp->mutex, NULL);
 		tmp->pos = create_vector(rand() % data->winx, rand() % data->winy);
 		tmp->prev_pos = create_vector(0, 0);
 		tmp->vel = create_vector(0, 0);
