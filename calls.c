@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/08/26 20:32:15 by gecarval          #+#    #+#             */
-/*   Updated: 2024/11/08 08:26:26 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/14 15:21:25 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,10 @@ void	free_part(t_particle *part, t_data *data)
 
 int	exit_data(t_data *data, int fd)
 {
+  if (data != NULL && data->qt != NULL)
+	  free_quadtree(data->qt);
+  if (data != NULL && data->hashmap != NULL)
+    free_hashmap(data->hashmap);
 	if (data != NULL && data->col_processors != NULL)
 		free(data->col_processors);
 	if (data != NULL && data->processors != NULL)
@@ -69,7 +73,7 @@ void	ft_set_params(t_data *data, int part_n, int radius)
 
 void	ft_init_program(t_data *data)
 {
-	ft_set_params(data, 2000, 1);
+	ft_set_params(data, 10000, 1);
 	data->ini = mlx_init();
 	if (!data->ini)
 		display_error(data, "init error\n");

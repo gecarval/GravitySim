@@ -34,7 +34,9 @@
 # define WINX 1200
 # define WINY 800
 
-# define COLLISION_STEPS 6
+# define HASHMAP_DIV 200
+
+# define COLLISION_STEPS 1
 # define WHITE 0xDDDDFF
 
 // QUAD TREE
@@ -135,6 +137,18 @@ typedef struct s_gravsim
 	t_particle				*part;
 }							t_gravsim;
 
+typedef struct s_hashkey
+{
+  t_point *point;
+  struct s_hashkey *next;
+}							t_hashkey;
+
+typedef struct s_hashmap
+{
+  t_rectangle   hashquad;
+  t_hashkey     *hashkey;
+} t_hashmap;
+
 typedef struct s_img
 {
 	void					*img_ptr;
@@ -179,6 +193,7 @@ typedef struct s_data
 	void					*win;
 	t_img					*img;
 	t_menu					*menu;
+  t_hashmap       **hashmap;
 	t_gravsim				*gsim;
 	t_quadtree				*qt;
 	t_processor				*processors;
@@ -252,6 +267,12 @@ float_t						vector_magsqsqrt(t_vector v);
 float_t						vector_magsq(t_vector v);
 float_t						constrain_float_t(float_t val, float_t min,
 								float_t max);
+// HASHMAP
+t_hashmap         **create_hashmap(t_data *data);
+void              insert_points_hashmap(t_hashmap **hashmap, t_data *data);
+void              free_hashmap(t_hashmap **hashmap);
+void              free_hashkey(t_hashkey *hashkey);
+void              display_hashmap(t_hashmap **hashmap, t_data *data);
 // QUAD TREE
 t_point						create_point(float_t x, float_t y,
 								t_particle *part);

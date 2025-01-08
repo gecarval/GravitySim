@@ -6,7 +6,7 @@
 /*   By: gecarval <gecarval@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/11 12:18:49 by gecarval          #+#    #+#             */
-/*   Updated: 2024/11/08 08:43:09 by gecarval         ###   ########.fr       */
+/*   Updated: 2024/11/14 15:38:59 by gecarval         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,6 +156,26 @@ void	update_position(t_particle *mover)
 	mover->acel = create_vector(0, 0);
 }
 
+void	constrain_position(t_particle *mover, t_data *data)
+{
+  if (mover->pos.x > data->winx - mover->r || mover->pos.x < 0 + mover->r)
+  {
+    mover->vel.x = mover->vel.x * -1;
+    if (mover->pos.x > data->winx - mover->r)
+      mover->pos.x = data->winx - mover->r - 1;
+    if (mover->pos.x < 0 + mover->r)
+      mover->pos.x = 0 + mover->r + 1;
+  }
+  if (mover->pos.y > data->winy - mover->r || mover->pos.y < 0 + mover->r)
+  {
+    mover->vel.y = mover->vel.y * -1;
+    if (mover->pos.y > data->winy - mover->r)
+      mover->pos.y = data->winy - mover->r - 1;
+    if (mover->pos.y < 0 + mover->r)
+      mover->pos.y = 0 + mover->r + 1;
+  }
+}
+
 void	process_velocity(t_data *data)
 {
 	int			i;
@@ -167,22 +187,7 @@ void	process_velocity(t_data *data)
 	{
 		tmp->prev_pos = tmp->pos;
 		update_position(tmp);
-		if (tmp->pos.x > data->winx - tmp->r || tmp->pos.x < 0 + tmp->r)
-		{
-			tmp->vel.x = tmp->vel.x * -1;
-			if (tmp->pos.x > data->winx - tmp->r)
-				tmp->pos.x = data->winx - tmp->r - 1;
-			if (tmp->pos.x < 0 + tmp->r)
-				tmp->pos.x = 0 + tmp->r + 1;
-		}
-		if (tmp->pos.y > data->winy - tmp->r || tmp->pos.y < 0 + tmp->r)
-		{
-			tmp->vel.y = tmp->vel.y * -1;
-			if (tmp->pos.y > data->winy - tmp->r)
-				tmp->pos.y = data->winy - tmp->r - 1;
-			if (tmp->pos.y < 0 + tmp->r)
-				tmp->pos.y = 0 + tmp->r + 1;
-		}
+    constrain_position(tmp, data);
 		tmp = tmp->next;
 	}
 }
@@ -241,7 +246,10 @@ void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
 	else
 	{
 		temp.pos = getmidpoint_onquad(qtree);
-		temp.mass = m->mass * qtree->point_count;
+    temp.mass = 0;
+    i = -1;
+    while (++i < qtree->point_count)
+      temp.mass += qtree->points[i].part->mass;
 		attraction(m, &temp);
 	}
 }
@@ -303,8 +311,6 @@ void	*partition_process(void *ptr)
 		tmp = tmp->next;
 		i++;
 	}
-	//	printf("Thread %d finished\n", (processors->start
-	//			/ (processors->data->num_of_particles / MAX_THREADS)) + 1);
 	return (NULL);
 }
 
@@ -314,32 +320,79 @@ void	*partition_collision(void *ptr)
 
 	processors = (t_processor *)ptr;
 	apply_collision_onquad(processors->qt, processors->data);
-	//	ft_putstr_fd("Collision applied\n", 1);
 	return (NULL);
+}
+
+void  collision_with_neighbours_quads(t_particle *mover, int i, int j, t_data *data)
+{
+  t_hashkey *tmp2;
+  t_particle *other;
+  t_vector dist;
+  int x;
+  int y;
+
+  y = i - 2;
+  while (++y < i + 2)
+  {
+    x = j - 2;
+    while (++x < j + 2)
+    {
+      if (x < 0 || x >= HASHMAP_DIV || y < 0 || y >= HASHMAP_DIV)
+        continue ;
+      tmp2 = data->hashmap[y][x].hashkey;
+      while (tmp2 != NULL)
+      {
+        other = tmp2->point->part;
+        if (mover != other)
+        {
+          dist = vectorsub(other->pos, mover->pos);
+          collision(mover, other, vector_magsqsqrt(dist));
+        }
+        tmp2 = tmp2->next;
+      }
+    }
+  }
+}
+
+void	collision_on_hashmap(t_data *data)
+{
+  int i;
+  int j;
+  t_hashkey *tmp;
+
+  i = -1;
+  while (++i < HASHMAP_DIV)
+  {
+    j = -1;
+    while (++j < HASHMAP_DIV)
+    {
+      tmp = data->hashmap[i][j].hashkey;
+      while (tmp != NULL)
+      {
+        collision_with_neighbours_quads(tmp->point->part, i, j, data);
+        tmp = tmp->next;
+      }
+    }
+  }
 }
 
 void	process_physics_quad(t_data *data)
 {
 	int			i;
-	int			k;
 	t_point		pt;
 	t_particle	*tmp;
-	t_quadtree	*qt;
 
 	i = -1;
 	tmp = data->gsim->part;
 	data->qt = create_quadtree_fromglobals(data->winx, data->winy);
-	// printf("Building quadtree\n");
 	while (++i < data->num_of_particles)
 	{
 		pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
 		insert_point(data->qt, pt);
 		tmp = tmp->next;
 	}
-	// printf("Quadtree built\n");
-	// printf("Applying forces\n");
-	i = 0;
-	while (i < MAX_THREADS)
+	i = -1;
+	while (++i < MAX_THREADS)
 	{
 		data->processors[i].data = data;
 		data->processors[i].start = i * data->num_of_particles / MAX_THREADS;
@@ -347,59 +400,23 @@ void	process_physics_quad(t_data *data)
 			/ MAX_THREADS;
 		if (pthread_create(&data->processors[i].processor, NULL,
 				partition_process, &data->processors[i]) != 0)
-		{
-			free_quadtree(data->qt);
 			display_error(data, "error on thread create\n");
-		}
-		i++;
-	}
-	if (data->show_tree == 1)
-		display_quadtree_boundaries(data->qt, data, 0xDD00DD);
-	k = -1;
-	while (++k < COLLISION_STEPS)
-	{
-		i = -1;
-		tmp = data->gsim->part;
-		qt = create_quadtree_fromvalues(data->winx / 2, data->winy / 2,
-				data->winx, data->winy, 3);
-		// printf("Applying collision for the %d time\n", k + 1);
-		// printf("Building quadtree number %d\n", k + 1);
-		while (++i < data->num_of_particles)
-		{
-			pthread_mutex_lock(&tmp->mutex);
-			pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
-			pthread_mutex_unlock(&tmp->mutex);
-			insert_point(qt, pt);
-			tmp = tmp->next;
-		}
-		// printf("Quadtree number %d built\n", k + 1);
-		if (data->show_collision_tree == 1)
-			display_quadtree_boundaries(qt, data, 0xDDDD00);
-		data->col_processors[k].data = data;
-		data->col_processors[k].qt = qt;
-		if (pthread_create(&data->col_processors[k].processor, NULL,
-				partition_collision, &data->col_processors[k]) != 0)
-			display_error(data, "error on thread create\n");
-	}
-	k = -1;
-	while (++k < COLLISION_STEPS)
-	{
-		// printf("Joining thread %d\n", k + 1);
-		if (pthread_join(data->col_processors[k].processor, NULL) != 0)
-			display_error(data, "error on thread join\n");
-		free_quadtree(data->col_processors[k].qt);
 	}
 	i = -1;
 	while (++i < MAX_THREADS)
-	{
 		if (pthread_join(data->processors[i].processor, NULL) != 0)
-		{
-			free_quadtree(data->qt);
 			display_error(data, "error on thread join\n");
-		}
-	}
+	if (data->show_tree == 1)
+		display_quadtree_boundaries(data->qt, data, 0x00DD00);
 	free_quadtree(data->qt);
-	// printf("all forces applied\n");
+  data->qt = NULL;
+  data->hashmap = create_hashmap(data);
+  insert_points_hashmap(data->hashmap, data);
+  collision_on_hashmap(data);
+  if (data->show_collision_tree == 1)
+    display_hashmap(data->hashmap, data);
+  free_hashmap(data->hashmap);
+  data->hashmap = NULL;
 }
 
 void	part_sim(t_data *data)

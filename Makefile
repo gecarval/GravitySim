@@ -16,7 +16,7 @@ CFLAGS = -g -Wall -Wextra -Werror
 LIBFT = libft.a
 MINILIBX = mlx_Linux.a
 INCS = -I./includes -I./libft -L./libft ./libft/$(LIBFT) -I./minilibx-linux -lmlx_Linux -L./minilibx-linux -lmlx -L/usr/include/../lib -lXext -lX11 -lm
-SRCS = ./bresenham/bresenham.c ./vector_calc.c ./quadtree.c ./gravitysim.c ./calls.c ./reads.c ./tools.c ./main.c
+SRCS = ./bresenham/bresenham.c ./vector_calc.c ./quadtree.c ./hashmap.c ./gravitysim.c ./calls.c ./reads.c ./tools.c ./main.c
 OBJS = $(SRCS:.c=.o)
 RM = rm -drf
 

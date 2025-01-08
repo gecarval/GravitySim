@@ -32,6 +32,50 @@ int	mouse_click(int key, int x, int y, t_data *data)
 	return (0);
 }
 
+t_particle *search_heaviest_particle(t_data *data)
+{
+  t_particle *tmp;
+  t_particle *heaviest;
+
+  tmp = data->gsim->part;
+  heaviest = tmp;
+  while (tmp != NULL)
+  {
+    if (tmp->mass > heaviest->mass)
+      heaviest = tmp;
+    tmp = tmp->next;
+  }
+  return (heaviest);
+}
+
+void  put_all_particles_in_orbit(t_data *data)
+{
+  t_particle *tmp;
+  t_particle *heaviest;
+  t_vector dist;
+  float_t d;
+  float_t strength;
+  float_t g;
+  float_t angle;
+
+  heaviest = search_heaviest_particle(data);
+  tmp = data->gsim->part;
+  g = 0.001;
+  while (tmp != NULL)
+  {
+    if (tmp != heaviest)
+    {
+      dist = vectorsub(heaviest->pos, tmp->pos);
+      d = vector_magsq(dist);
+      strength = g * heaviest->mass / d;
+      angle = atan2(dist.y, dist.x);
+      tmp->vel = vectoradd(tmp->vel, create_vector(cos(angle) * strength,
+        sin(angle) * strength));
+    }
+    tmp = tmp->next;
+  }
+}
+
 void	put_particle(int x, int y, t_data *data)
 {
 	t_particle	*tmp;
@@ -104,6 +148,7 @@ int	mlx_cooked(int key, t_data *data)
 	if (key == ' ')
 	{
 		render_background(data, 0x000000);
+    put_all_particles_in_orbit(data);
 		mlx_put_image_to_window(data->ini, data->win, data->img->img_ptr, 0, 0);
 		water_mark(data);
 	}
