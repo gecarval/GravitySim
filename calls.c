@@ -73,7 +73,7 @@ void	ft_set_params(t_data *data, int part_n, int radius)
 
 void	ft_init_program(t_data *data)
 {
-	ft_set_params(data, 10000, 1);
+	ft_set_params(data, 5000, 1);
 	data->ini = mlx_init();
 	if (!data->ini)
 		display_error(data, "init error\n");
@@ -85,10 +85,12 @@ void	ft_init_program(t_data *data)
 	if (!data->gsim)
 		display_error(data, "gravitysim malloc error\n");
 	data->gsim->part = NULL;
-	data->processors = (t_processor *)malloc(sizeof(t_processor) * MAX_THREADS);
+  data->qt = NULL;
+  data->hashmap = NULL;
+	data->processors = (t_processor *)ft_calloc(sizeof(t_processor), MAX_THREADS);
 	if (!data->processors)
 		display_error(data, "processors malloc error\n");
-	data->col_processors = (t_processor *)malloc(sizeof(t_processor) * COLLISION_STEPS);
+	data->col_processors = (t_processor *)ft_calloc(sizeof(t_processor), data->num_of_particles);
 	if (!data->col_processors)
 		display_error(data, "col_processors malloc error\n");
 	data->img = (t_img *)malloc(sizeof(t_img));

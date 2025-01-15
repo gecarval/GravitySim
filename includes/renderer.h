@@ -36,20 +36,23 @@
 
 # define HASHMAP_DIV 200
 
-# define COLLISION_STEPS 1
+# define COLLISION_STEPS 6
 # define WHITE 0xDDDDFF
 
 // QUAD TREE
-# define DEFAULT_CAPACITY 1024
+# define DEFAULT_CAPACITY 512
 # define MAX_DEPTH 1024
 
 // STRUCTS
 typedef struct s_data		t_data;
 typedef struct s_quadtree	t_quadtree;
+typedef struct s_hashkey t_hashkey;
+typedef struct s_hashmap t_hashmap;
 
 typedef struct s_processor
 {
 	pthread_t				processor;
+  t_hashmap       **hashmap;
 	t_quadtree				*qt;
 	t_data					*data;
 	int						start;
