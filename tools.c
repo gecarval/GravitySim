@@ -181,7 +181,7 @@ void	water_mark(t_data *data)
 {
 	mlx_string_put(data->ini, data->win, 15, 15, 120000, "renders by gecarval");
 	mlx_string_put(data->ini, data->win, 15, 60, 120000,
-		"Press 1 for Life Sim");
+		"Press 1 for Gravity Sim");
 }
 
 void	render_background(t_data *data, int color)
