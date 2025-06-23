@@ -12,19 +12,15 @@
 
 #include "./includes/renderer.h"
 
-int	main(int argc, char **argv)
-{
-	t_data	*data;
+int main(int argc, char **argv) {
+	t_data *data;
 
 	data = (t_data *)malloc(sizeof(t_data));
-	if (!data)
-		display_error(data, "malloc error\n");
+	if (!data) display_error(data, "malloc error\n");
 	data->winx = WINX;
 	data->winy = WINY;
-	if (argc == 3)
-		data->winx = ft_atoi(argv[1]);
-	if (argc == 3)
-		data->winy = ft_atoi(argv[2]);
+	if (argc == 3) data->winx = ft_atoi(argv[1]);
+	if (argc == 3) data->winy = ft_atoi(argv[2]);
 	ft_printf("%s <WINDOW WIDTH> <WINDOW HEIGHT>\n", argv[0]);
 	ft_init_program(data);
 	create_gsim(data);

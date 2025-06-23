@@ -12,74 +12,62 @@
 
 #include "./includes/renderer.h"
 
-float_t	mapfloat_t(float_t value, float_t inmin, float_t inmax, float_t outmin,
-		float_t outmax)
-{
+float_t mapfloat_t(float_t value, float_t inmin, float_t inmax, float_t outmin,
+				   float_t outmax) {
 	return ((value - inmin) * (outmax - outmin) / (inmax - inmin) + outmin);
 }
 
-int	create_rgb_color(int r, int g, int b)
-{
+int create_rgb_color(int r, int g, int b) {
 	return ((r << 16) | (g << 8) | b);
 }
 
-int	set_redshift(t_particle *tmp, t_data *data)
-{
+int set_redshift(t_particle *tmp, t_data *data) {
 	int		redintensity;
-	float_t	speedmag;
+	float_t speedmag;
 
 	speedmag = vector_magsq(tmp->vel);
-	redintensity = (int)mapfloat_t(speedmag, 0.0f, data->num_of_particles / 500,
-			255.0f, 0.0f);
-	if (redintensity > 255)
-		redintensity = 255;
-	if (redintensity < 0)
-		redintensity = 0;
+	redintensity = (int)mapfloat_t(
+		speedmag, 0.0f, (float_t)data->num_of_particles / 500, 255.0f, 0.0f);
+	if (redintensity > 255) redintensity = 255;
+	if (redintensity < 0) redintensity = 0;
 	return (create_rgb_color(255, redintensity, redintensity));
 }
 
-void	render_particle(t_data *data)
-{
+void render_particle(t_data *data) {
 	int			i;
 	int			j;
-	t_particle	*tmp;
+	t_particle *tmp;
 
 	i = -1;
 	tmp = data->gsim->part;
 	render_background(data, 0x000000);
-	while (++i < data->num_of_particles)
-	{
+	while (++i < data->num_of_particles) {
 		tmp->color = set_redshift(tmp, data);
-		if (tmp->r == 1)
-		{
+		if (tmp->r == 1) {
 			pixel_to_img((int)tmp->pos.x, (int)tmp->pos.y, data, tmp->color);
-		}
-		else
-		{
+		} else {
 			j = tmp->r;
 			while (--j >= 0)
 				circlebres((int)tmp->pos.x, (int)tmp->pos.y, j, data,
-					tmp->color);
+						   tmp->color);
 		}
 		tmp->color = WHITE;
 		tmp = tmp->next;
 	}
 }
 
-void	applyforce(t_particle *mover, t_vector force)
-{
-	t_vector	f;
+void applyforce(t_particle *mover, t_vector force) {
+	t_vector f;
 
 	f = vectordiv(force, mover->mass);
 	mover->acel = vectoradd(mover->acel, f);
 }
 
-void	attraction(t_particle *mover, t_particle *other)
-{
-	t_vector	force;
-	float_t		strength;
-	float_t		dist;
-	float_t		g;
+void attraction(t_particle *mover, t_particle *other) {
+	t_vector force;
+	float_t	 strength;
+	float_t	 dist;
+	float_t	 g;
 
 	g = 0.002;
 	force = (t_vector){0, 0};
@@ -92,29 +80,27 @@ void	attraction(t_particle *mover, t_particle *other)
 	pthread_mutex_unlock(&mover->mutex);
 }
 
-void	collision(t_particle *p1, t_particle *p2, float_t d)
-{
-	t_vector	impactvector;
-	t_vector	deltava;
-	t_vector	deltavb;
-	t_vector	vdiff;
-	t_vector	dir;
-	float_t		overlap;
-  float_t   overlap1;
-  float_t   overlap2;
-	float_t		msum;
-	float_t		num;
-	float_t		den;
+void collision(t_particle *p1, t_particle *p2, float_t d) {
+	t_vector impactvector;
+	t_vector deltava;
+	t_vector deltavb;
+	t_vector vdiff;
+	t_vector dir;
+	float_t	 overlap;
+	float_t	 overlap1;
+	float_t	 overlap2;
+	float_t	 msum;
+	float_t	 num;
+	float_t	 den;
 
-	if (d < p1->r + p2->r)
-	{
+	if (d < p1->r + p2->r) {
 		impactvector = vectorsub(p2->pos, p1->pos);
 		overlap = d - (p1->r + p2->r);
 		dir = vector_setmagmult(impactvector, overlap);
-    overlap1 = (float_t)(((float_t)p2->mass) / (p1->mass + p2->mass));
-    overlap2 = (float_t)(((float_t)p1->mass) / (p1->mass + p2->mass));
-    overlap1 = floorf(overlap1 * 100) / 100;
-    overlap2 = floorf(overlap2 * 100) / 100;
+		overlap1 = (float_t)(((float_t)p2->mass) / (p1->mass + p2->mass));
+		overlap2 = (float_t)(((float_t)p1->mass) / (p1->mass + p2->mass));
+		overlap1 = floorf(overlap1 * 100) / 100;
+		overlap2 = floorf(overlap2 * 100) / 100;
 		pthread_mutex_lock(&p1->mutex);
 		p1->pos = vectoradd(p1->pos, vectormult(dir, overlap1));
 		pthread_mutex_unlock(&p1->mutex);
@@ -141,152 +127,123 @@ void	collision(t_particle *p1, t_particle *p2, float_t d)
 	}
 }
 
-void	limit_velocity(t_particle *mover, float_t limit)
-{
-	if (mover->vel.x > limit)
-		mover->vel.x = limit;
-	if (mover->vel.y > limit)
-		mover->vel.y = limit;
-	if (mover->vel.x < -limit)
-		mover->vel.x = -limit;
-	if (mover->vel.y < -limit)
-		mover->vel.y = -limit;
+void limit_velocity(t_particle *mover, float_t limit) {
+	if (mover->vel.x > limit) mover->vel.x = limit;
+	if (mover->vel.y > limit) mover->vel.y = limit;
+	if (mover->vel.x < -limit) mover->vel.x = -limit;
+	if (mover->vel.y < -limit) mover->vel.y = -limit;
 }
 
-void	update_position(t_particle *mover)
-{
+void update_position(t_particle *mover) {
 	mover->vel = vectoradd(mover->vel, mover->acel);
 	limit_velocity(mover, 2000);
 	mover->pos = vectoradd(mover->pos, mover->vel);
 	mover->acel = create_vector(0, 0);
 }
 
-void	constrain_position(t_particle *mover, t_data *data)
-{
-  if (mover->pos.x > data->winx - mover->r || mover->pos.x < 0 + mover->r)
-  {
-    mover->vel.x = mover->vel.x * -1;
-    if (mover->pos.x > data->winx - mover->r)
-      mover->pos.x = data->winx - mover->r - 1;
-    if (mover->pos.x < 0 + mover->r)
-      mover->pos.x = 0 + mover->r + 1;
-  }
-  if (mover->pos.y > data->winy - mover->r || mover->pos.y < 0 + mover->r)
-  {
-    mover->vel.y = mover->vel.y * -1;
-    if (mover->pos.y > data->winy - mover->r)
-      mover->pos.y = data->winy - mover->r - 1;
-    if (mover->pos.y < 0 + mover->r)
-      mover->pos.y = 0 + mover->r + 1;
-  }
+void constrain_position(t_particle *mover, t_data *data) {
+	if (mover->pos.x > data->winx - mover->r || mover->pos.x < 0 + mover->r) {
+		mover->vel.x = mover->vel.x * -1;
+		if (mover->pos.x > data->winx - mover->r)
+			mover->pos.x = data->winx - mover->r - 1;
+		if (mover->pos.x < 0 + mover->r) mover->pos.x = 0 + mover->r + 1;
+	}
+	if (mover->pos.y > data->winy - mover->r || mover->pos.y < 0 + mover->r) {
+		mover->vel.y = mover->vel.y * -1;
+		if (mover->pos.y > data->winy - mover->r)
+			mover->pos.y = data->winy - mover->r - 1;
+		if (mover->pos.y < 0 + mover->r) mover->pos.y = 0 + mover->r + 1;
+	}
 }
 
-void	process_velocity(t_data *data)
-{
+void process_velocity(t_data *data) {
 	int			i;
-	t_particle	*tmp;
+	t_particle *tmp;
 
 	i = -1;
 	tmp = (data->gsim->part);
-	while (++i < data->num_of_particles)
-	{
+	while (++i < data->num_of_particles) {
 		tmp->prev_pos = tmp->pos;
 		update_position(tmp);
-    constrain_position(tmp, data);
+		constrain_position(tmp, data);
 		tmp = tmp->next;
 	}
 }
 
-t_vector	getmidpoint_onquad(t_quadtree *qt)
-{
-	int	x;
-	int	y;
-	int	i;
+t_vector getmidpoint_onquad(t_quadtree *qt) {
+	int x;
+	int y;
+	int i;
 
 	x = 0;
 	y = 0;
 	i = -1;
-	while (++i < qt->point_count)
-		x += qt->points[i].part->pos.x;
+	while (++i < qt->point_count) x += qt->points[i].part->pos.x;
 	i = -1;
-	while (++i < qt->point_count)
-		y += qt->points[i].part->pos.y;
-	if (qt->point_count != 0)
-	{
+	while (++i < qt->point_count) y += qt->points[i].part->pos.y;
+	if (qt->point_count != 0) {
 		x /= qt->point_count;
 		y /= qt->point_count;
 	}
 	return (create_vector(x, y));
 }
 
-void	apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data)
-{
-	t_particle	*p;
+void apply_attraction_onquad(t_particle *m, t_quadtree *qtree, t_data *data) {
+	t_particle *p;
 	t_particle	temp;
-  t_point   pt;
-//	t_vector	qdist;
-//	float_t		d;
-	int			i;
+	t_point		pt;
+	//	t_vector	qdist;
+	//	float_t		d;
+	int i;
 
-	if (qtree->divided && qtree->points == NULL)
-	{
+	if (qtree->divided && qtree->points == NULL) {
 		apply_attraction_onquad(m, qtree->northeast, data);
 		apply_attraction_onquad(m, qtree->northwest, data);
 		apply_attraction_onquad(m, qtree->southeast, data);
 		apply_attraction_onquad(m, qtree->southwest, data);
-		return ;
+		return;
 	}
-//	qdist = create_vector(qtree->boundary.x, qtree->boundary.y);
-//	qdist = vectorsub(m->pos, qdist);
-//	d = vector_magsqsqrt(qdist);
-  pt = create_point(m->pos.x, m->pos.y, m);
-	if (quadcontains(&qtree->boundary, &pt))
-	{
+	//	qdist = create_vector(qtree->boundary.x, qtree->boundary.y);
+	//	qdist = vectorsub(m->pos, qdist);
+	//	d = vector_magsqsqrt(qdist);
+	pt = create_point(m->pos.x, m->pos.y, m);
+	if (quadcontains(&qtree->boundary, &pt)) {
+		i = -1;
+		while (++i < qtree->point_count) {
+			p = qtree->points[i].part;
+			if (m != p) attraction(m, p);
+		}
+	} else {
+		temp.pos = getmidpoint_onquad(qtree);
+		temp.mass = 0;
 		i = -1;
 		while (++i < qtree->point_count)
-		{
-			p = qtree->points[i].part;
-			if (m != p)
-				attraction(m, p);
-		}
-	}
-	else
-	{
-		temp.pos = getmidpoint_onquad(qtree);
-    temp.mass = 0;
-    i = -1;
-    while (++i < qtree->point_count)
-      temp.mass += qtree->points[i].part->mass;
+			temp.mass += qtree->points[i].part->mass;
 		attraction(m, &temp);
 	}
 }
 
-void	apply_collision_onquad(t_quadtree *qt, t_data *data)
-{
+void apply_collision_onquad(t_quadtree *qt, t_data *data) {
 	int			i;
 	int			j;
 	t_vector	dist;
-	t_particle	*tmp;
-	t_particle	*tmp2;
+	t_particle *tmp;
+	t_particle *tmp2;
 
-	if (qt->divided)
-	{
+	if (qt->divided) {
 		apply_collision_onquad(qt->northwest, data);
 		apply_collision_onquad(qt->northeast, data);
 		apply_collision_onquad(qt->southwest, data);
 		apply_collision_onquad(qt->southeast, data);
-		return ;
+		return;
 	}
 	i = -1;
-	while (++i < qt->point_count)
-	{
+	while (++i < qt->point_count) {
 		j = i - 1;
-		while (++j < qt->point_count)
-		{
+		while (++j < qt->point_count) {
 			tmp = (qt->points[i]).part;
 			tmp2 = (qt->points[j]).part;
-			if (tmp != tmp2)
-			{
+			if (tmp != tmp2) {
 				pthread_mutex_lock(&tmp->mutex);
 				pthread_mutex_lock(&tmp2->mutex);
 				dist = vectorsub(tmp2->pos, tmp->pos);
@@ -298,22 +255,19 @@ void	apply_collision_onquad(t_quadtree *qt, t_data *data)
 	}
 }
 
-void	*partition_process(void *ptr)
-{
-	t_processor	*processors;
+void *partition_process(void *ptr) {
+	t_processor *processors;
 	t_particle	*tmp;
-	int			i;
+	int			 i;
 
 	i = 0;
 	processors = (t_processor *)ptr;
 	tmp = processors->data->gsim->part;
-	while (i < processors->start)
-	{
+	while (i < processors->start) {
 		tmp = tmp->next;
 		i++;
 	}
-	while (i < processors->end)
-	{
+	while (i < processors->end) {
 		apply_attraction_onquad(tmp, processors->data->qt, processors->data);
 		tmp = tmp->next;
 		i++;
@@ -321,136 +275,123 @@ void	*partition_process(void *ptr)
 	return (NULL);
 }
 
-void	*partition_collision(void *ptr)
-{
-	t_processor	*processors;
+void *partition_collision(void *ptr) {
+	t_processor *processors;
 
 	processors = (t_processor *)ptr;
 	apply_collision_onquad(processors->qt, processors->data);
 	return (NULL);
 }
 
-void  collision_with_neighbours_quads(t_particle *mover, int i, int j, t_hashmap **hashmap)
-{
-  t_hashkey *tmp2;
-  t_particle *other;
-  t_vector dist;
-  t_circle  mover_sphere;
-  int x;
-  int y;
+void collision_with_neighbours_quads(t_particle *mover, int i, int j,
+									 t_hashmap **hashmap) {
+	t_hashkey  *tmp2;
+	t_particle *other;
+	t_vector	dist;
+	t_circle	mover_sphere;
+	int			x;
+	int			y;
 
-  y = i - 2;
-  while (++y < i + 2)
-  {
-    x = j - 2;
-    while (++x < j + 2)
-    {
-      if (x < 0 || x >= HASHMAP_DIV || y < 0 || y >= HASHMAP_DIV)
-        continue ;
-      mover_sphere = create_circle(mover->pos.x, mover->pos.y, mover->r);
-      if (!cirintersects(&mover_sphere, &hashmap[y][x].hashquad))
-        continue ;
-      tmp2 = hashmap[y][x].hashkey;
-      while (tmp2 != NULL)
-      {
-        other = tmp2->point->part;
-        if (mover != other)
-        {
-          dist = vectorsub(other->pos, mover->pos);
-          collision(mover, other, vector_magsqsqrt(dist));
-        }
-        tmp2 = tmp2->next;
-      }
-    }
-  }
+	y = i - 2;
+	while (++y < i + 2) {
+		x = j - 2;
+		while (++x < j + 2) {
+			if (x < 0 || x >= HASHMAP_DIV || y < 0 || y >= HASHMAP_DIV)
+				continue;
+			mover_sphere = create_circle(mover->pos.x, mover->pos.y, mover->r);
+			if (!cirintersects(&mover_sphere, &hashmap[y][x].hashquad))
+				continue;
+			tmp2 = hashmap[y][x].hashkey;
+			while (tmp2 != NULL) {
+				other = tmp2->point->part;
+				if (mover != other) {
+					dist = vectorsub(other->pos, mover->pos);
+					collision(mover, other, vector_magsqsqrt(dist));
+				}
+				tmp2 = tmp2->next;
+			}
+		}
+	}
 }
 
-void	collision_on_hashmap(t_processor *processor)
-{
-  int i;
-  int j;
-  t_hashkey *tmp;
+void collision_on_hashmap(t_processor *processor) {
+	int		   i;
+	int		   j;
+	t_hashkey *tmp;
 
-  i = -1;
-  while (++i < HASHMAP_DIV)
-  {
-    j = -1;
-    while (++j < HASHMAP_DIV)
-    {
-      tmp = processor->hashmap[i][j].hashkey;
-      while (tmp != NULL)
-      {
-        collision_with_neighbours_quads(tmp->point->part, i, j, processor->hashmap);
-        tmp = tmp->next;
-      }
-    }
-  }
+	i = -1;
+	while (++i < HASHMAP_DIV) {
+		j = -1;
+		while (++j < HASHMAP_DIV) {
+			tmp = processor->hashmap[i][j].hashkey;
+			while (tmp != NULL) {
+				collision_with_neighbours_quads(tmp->point->part, i, j,
+												processor->hashmap);
+				tmp = tmp->next;
+			}
+		}
+	}
 }
 
-void *partition_col_process(void *ptr)
-{
-  t_processor *processors;
+void *partition_col_process(void *ptr) {
+	t_processor *processors;
 
-  processors = (t_processor *)ptr;
-  collision_on_hashmap(processors);
-  free_hashmap(processors->hashmap);
-  return (NULL);
+	processors = (t_processor *)ptr;
+	collision_on_hashmap(processors);
+	free_hashmap(processors->hashmap);
+	return (NULL);
 }
 
-void	process_physics_quad(t_data *data)
-{
+void process_physics_quad(t_data *data) {
 	int			i;
 	t_point		pt;
-	t_particle	*tmp;
+	t_particle *tmp;
 
-  i = -1;
-  tmp = data->gsim->part;
-  data->qt = create_quadtree_fromglobals(data->winx, data->winy);
-  while (++i < data->num_of_particles)
-  {
-    pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
-    insert_point(data->qt, pt);
-    tmp = tmp->next;
-  }
-  i = -1;
-  while (++i < MAX_THREADS)
-  {
-    data->processors[i].data = data;
-    data->processors[i].start = i * data->num_of_particles / MAX_THREADS;
-    data->processors[i].end = (i + 1) * data->num_of_particles
-      / MAX_THREADS;
-    if (pthread_create(&data->processors[i].processor, NULL,
-          partition_process, &data->processors[i]) != 0)
-      display_error(data, "error on thread create\n");
-  }
-  i = -1;
-  while (++i < MAX_THREADS)
-    if (pthread_join(data->processors[i].processor, NULL) != 0)
-      display_error(data, "error on thread join\n");
-  if (data->show_tree == 1)
-    display_quadtree_boundaries(data->qt, data, 0x00DD00);
-  free_quadtree(data->qt);
-  data->qt = NULL;
-  i = -1;
-  while (++i < COLLISION_STEPS)
-  {
-    data->col_processors[i].data = data;
-    data->col_processors[i].hashmap = create_hashmap(data);
-    insert_points_hashmap(data->col_processors[i].hashmap, data);
-    if (data->show_collision_tree == 1 && i == 0)
-      display_hashmap(data->col_processors[i].hashmap, data);
-    if (pthread_create(&data->col_processors[i].processor, NULL,
-          partition_col_process, &data->col_processors[i]) != 0)
-      display_error(data, "error on thread create\n");
-  }
-  i = -1;
-  while (++i < COLLISION_STEPS)
-    if (pthread_join(data->col_processors[i].processor, NULL) != 0)
-      display_error(data, "error on thread join\n");
+	i = -1;
+	tmp = data->gsim->part;
+	data->qt = create_quadtree_fromglobals(data->winx, data->winy);
+	while (++i < data->num_of_particles) {
+		pt = create_point(tmp->pos.x, tmp->pos.y, tmp);
+		insert_point(data->qt, pt);
+		tmp = tmp->next;
+	}
+	i = -1;
+	while (++i < MAX_THREADS) {
+		data->processors[i].data = data;
+		data->processors[i].start = i * data->num_of_particles / MAX_THREADS;
+		data->processors[i].end =
+			(i + 1) * data->num_of_particles / MAX_THREADS;
+		if (pthread_create(&data->processors[i].processor, NULL,
+						   partition_process, &data->processors[i]) != 0)
+			display_error(data, "error on thread create\n");
+	}
+	i = -1;
+	while (++i < MAX_THREADS)
+		if (pthread_join(data->processors[i].processor, NULL) != 0)
+			display_error(data, "error on thread join\n");
+	if (data->show_tree == 1)
+		display_quadtree_boundaries(data->qt, data, 0x00DD00);
+	free_quadtree(data->qt);
+	data->qt = NULL;
+	i = -1;
+	while (++i < COLLISION_STEPS) {
+		data->col_processors[i].data = data;
+		data->col_processors[i].hashmap = create_hashmap(data);
+		insert_points_hashmap(data->col_processors[i].hashmap, data);
+		if (data->show_collision_tree == 1 && i == 0)
+			display_hashmap(data->col_processors[i].hashmap, data);
+		if (pthread_create(&data->col_processors[i].processor, NULL,
+						   partition_col_process,
+						   &data->col_processors[i]) != 0)
+			display_error(data, "error on thread create\n");
+	}
+	i = -1;
+	while (++i < COLLISION_STEPS)
+		if (pthread_join(data->col_processors[i].processor, NULL) != 0)
+			display_error(data, "error on thread join\n");
 }
 
-void	part_sim(t_data *data)
-{
+void part_sim(t_data *data) {
 	process_velocity(data);
 	render_particle(data);
 	process_physics_quad(data);

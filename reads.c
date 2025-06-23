@@ -12,19 +12,16 @@
 
 #include "./includes/renderer.h"
 
-void	create_gsim(t_data *data)
-{
+void create_gsim(t_data *data) {
 	int			i;
-	t_particle	*tmp;
+	t_particle *tmp;
 
 	srand((unsigned int)time(NULL));
 	data->gsim->part = (t_particle *)malloc(sizeof(t_particle));
-	if (!data->gsim->part)
-		display_error(data, "part malloc error\n");
+	if (!data->gsim->part) display_error(data, "part malloc error\n");
 	i = -1;
 	tmp = data->gsim->part;
-	while (++i < data->num_of_particles)
-	{
+	while (++i < data->num_of_particles) {
 		pthread_mutex_init(&tmp->mutex, NULL);
 		tmp->pos = create_vector(rand() % data->winx, rand() % data->winy);
 		tmp->prev_pos = create_vector(0, 0);
@@ -33,11 +30,9 @@ void	create_gsim(t_data *data)
 		tmp->mass = 1;
 		tmp->r = data->radius;
 		tmp->color = WHITE;
-		if (i + 1 == data->num_of_particles)
-			break ;
+		if (i + 1 == data->num_of_particles) break;
 		tmp->next = (t_particle *)malloc(sizeof(t_particle));
-		if (!tmp->next)
-			display_error(data, "part malloc error\n");
+		if (!tmp->next) display_error(data, "part malloc error\n");
 		tmp = tmp->next;
 	}
 }
